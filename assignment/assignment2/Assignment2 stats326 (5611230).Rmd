@@ -1,0 +1,149 @@
+---
+title: "Stats326 - Assignment2"
+author: "Cameron Todd (5611230)"
+date: "7 Jan 2018"
+output:
+  word_document: default
+  html_document: default
+---
+
+```{r}
+library(readr)
+library(timeSeries)
+library(s20x)
+```
+```{r}
+A_carbon.df = read.table("quarterly dioxide.txt", header=T)
+```
+Question 1
+Looking at the plot below we can clearly see and increasing positive trend with strong seasonality. I think the variability in the data does not appear to be increasing over time and therefore I did not transform the response variable. Their could be ever so slight curvature in the plot and therefore would require perhaps a quadratic when we go to fit the model. Their appears to be no outliers of any sort or kinks in the linear trend, therefore a break is not required
+
+```{r}
+
+series.ts = ts(A_carbon.df$dioxide, frequency = 4, start=2000)
+plot.ts(series.ts,main="Atmospheric Carbon Dioxide (Year 2000 - 2017)", xlab="Year",ylab="Carbon Dioxide level (ppm) ")
+
+```
+
+Q2 Fit Appropriate model after checking all of them. Seasonally Adjusted Moving Averages Model ended up being the best
+```{r}
+Time = 1:67
+Quarter = factor(c(rep(1:4,16),(1:3)))
+acd.ts = ts(A_carbon.df$dioxide[1:67],start=2000, frequency=4)
+decomp.ma.acd = decompose(acd.ts)
+
+#SA MA Forecast with quadratic and lag
+acd_sa_ma.ts = acd.ts - decomp.ma.acd$seasonal
+acd.fit_SA_MA2 = lm(acd_sa_ma.ts[-1]~Time[-1]+ I(Time[-1]^2) + acd_sa_ma.ts[-67])
+
+#SA MA Forecast
+
+t68.ma.pred = acd.fit_SA_MA2$coefficients[1] + acd.fit_SA_MA2$coefficients[2]*68 + acd.fit_SA_MA2$coefficients[3] *(68^2) + acd.fit_SA_MA2$coefficients[4] * acd_sa_ma.ts[67]
+cat("Q4 2016 prediction: ",t68.ma.pred,"\n")
+
+t69.ma.pred = acd.fit_SA_MA2$coefficients[1] + acd.fit_SA_MA2$coefficients[2]*69 + acd.fit_SA_MA2$coefficients[3] *(69^2) + acd.fit_SA_MA2$coefficients[4] * t68.ma.pred
+cat("Q1 2017 prediction: ",t69.ma.pred,"\n")
+
+t70.ma.pred = acd.fit_SA_MA2$coefficients[1] + acd.fit_SA_MA2$coefficients[2]*70 + acd.fit_SA_MA2$coefficients[3] *(70^2) + acd.fit_SA_MA2$coefficients[4] * t69.ma.pred
+cat("Q2 2017 prediction: ",t70.ma.pred,"\n")
+
+t71.ma.pred = acd.fit_SA_MA2$coefficients[1] + acd.fit_SA_MA2$coefficients[2]*71 + acd.fit_SA_MA2$coefficients[3] *(71^2) + acd.fit_SA_MA2$coefficients[4] * t70.ma.pred
+cat("Q3 2017 prediction: ",t71.ma.pred,"\n")
+
+RMSEP.ma.sa = sqrt((1/4)*sum((A_carbon.df$dioxide[68]-t68.ma.pred)^2,(A_carbon.df$dioxide[69]-t69.ma.pred)^2,(A_carbon.df$dioxide[70]-t70.ma.pred)^2,(A_carbon.df$dioxide[71]-t71.ma.pred)^2))
+
+cat("The RMSEP for this seasonally adjusted moving average model is",RMSEP.ma.sa,"\n")
+
+cat("The model I finalised that had the highest predicting power using the RMSEP was: ")
+
+```
+```{r}
+coef(acd.fit_SA_MA2)
+```
+The Model I finalised that had the highest predicting power using the RMSEP was:
+$ACD_f = β_0 + β_1 × Time + β_2 × Time^2 + py_t-1^s^a + ∊_t$ 
+Or more exact estimated model is:
+$ACD_f = 162.3448 + 0.2013264Time + 0.0004514249Time^2 + 0.5604094 + ∊_t $
+
+#Question 3 - 
+
+Re-running Seasonally adjusted Moving averages model - with all data
+
+```{r}
+Time.sa = 1:71
+Quarter.full.sa = factor(c(rep(1:4,17),(1:3)))
+ACD.sa.ts = ts(A_carbon.df$dioxide[1:71],start=2000, frequency=4)
+decomp.ma.acd = decompose(ACD.sa.ts)
+
+decomp.stl.acd = stl(ACD.sa.ts, s.window = "periodic")
+decomp.stl.acd$time.series[1:4,1]
+plot(decomp.stl.acd)
+
+acd_ma.sa.ts = ACD.sa.ts - decomp.ma.acd$seasonal
+
+plot(acd_ma.sa.ts, main = "Seasonally Adjusted Carbon Dioxide (Q1 2000 - Q3 2017)" , xlab="Quarter", ylab="Carbon Dioxide (ppm)")
+
+ACD.fit3 = lm(acd_ma.sa.ts[-1]~Time.sa[-1]+ I(Time.sa[-1]^2) + acd_ma.sa.ts[-71])
+summary(ACD.fit3)
+plot.ts(residuals(ACD.fit3), main = "Residual Series")
+acf(residuals(ACD.fit3))
+normcheck(residuals(ACD.fit3), shapiro.wilk = T)
+
+
+#SA MA Forecast
+
+t72.ma.pred = ACD.fit3$coefficients[1] + ACD.fit3$coefficients[2]*72 + ACD.fit3$coefficients[3] *(72^2) + ACD.fit3$coefficients[4] * acd_ma.sa.ts[71]
+
+t73.ma.pred = ACD.fit3$coefficients[1] + ACD.fit3$coefficients[2]*73 + ACD.fit3$coefficients[3] *(73^2) + ACD.fit3$coefficients[4] * t72.ma.pred
+
+t74.ma.pred = ACD.fit3$coefficients[1] + ACD.fit3$coefficients[2]*74 + ACD.fit3$coefficients[3] *(74^2) + ACD.fit3$coefficients[4] * t73.ma.pred
+
+t75.ma.pred = ACD.fit3$coefficients[1] + ACD.fit3$coefficients[2]*75 + ACD.fit3$coefficients[3] *(75^2) + ACD.fit3$coefficients[4] * t74.ma.pred
+
+```
+
+Technical Notes
+
+```{r}
+
+#TO DO PREDICTION INTERVALS 
+
+pred72.high = t72.ma.pred + 1.96 * 0.3452
+pred72.low = t72.ma.pred - 1.96 * 0.3452
+
+pred73.high = t73.ma.pred + 1.96 * 0.3452
+pred73.low = t73.ma.pred - 1.96 * 0.3452
+
+pred74.high = t74.ma.pred + 1.96 * 0.3452
+pred74.low = t74.ma.pred - 1.96 * 0.3452
+
+pred75.high = t75.ma.pred + 1.96 * 0.3452
+pred75.low = t75.ma.pred - 1.96 * 0.3452
+
+cat("Prediction point Q4 2017= ",t72.ma.pred,"Lower limit t72 = ",pred72.low, " Upper limit t72 = ",pred72.high,  "\n")
+cat("Prediction point Q1 2018= ",t73.ma.pred,"Lower limit t73 = ",pred73.low, " Upper limit t73 = ",pred73.high,  "\n")
+cat("Prediction point Q2 2018= ",t74.ma.pred,"Lower limit t74 = ",pred74.low, " Upper limit t74 = ",pred74.high,  "\n")
+cat("Prediction point Q3 2018= ",t75.ma.pred,"Lower limit t75 = ",pred75.low, " Upper limit t75 = ",pred75.high,  "\n")
+```
+Technical notes for question 3:
+
+
+
+
+Question 4 - Holt Winters Model
+Additive Model
+```{r}
+ACD.fit.hw = HoltWinters(acd.ts)
+
+ACD.fit.hw.pred = predict(ACD.fit.hw, n.ahead = 4)
+ACD.fit.hw.pred
+
+plot(ACD.fit.hw,ACD.fit.hw.pred)
+
+actual = A_carbon.df$dioxide[68:71]
+
+RMSEP_ACD.hw.pred = sqrt(1/4 * sum((actual-ACD.fit.hw.pred)^2))
+cat("The RMSEP for the Holt winters model is: ",RMSEP_ACD.hw.pred)
+```
+As you can see there is a better model, the Holt-Winters additive model produces a far better model then the Seasonally adjusted moving averages model. We chose the additive model because our data shows that the seasonal component is reasonably constant through time, if the seasonal component was not constant we would use the multiplicative model. The better model is defined as having the strongest predictive power by predicting 4 quarters that we already know and calculate the RMSEP, the RMSEP for the Holt winters is significantly smaller of 0.2419712
+Comments: justify answer for this being better = RMSEP is smaller

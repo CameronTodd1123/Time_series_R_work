@@ -1,0 +1,77 @@
+---
+title: "Stats326 - Assignment1"
+author: "Cameron Todd (5611230)"
+date: "7 Jan 2018"
+output:
+  word_document: default
+  html_document: default
+---
+
+```{r}
+library(readr)
+library(timeSeries)
+```
+
+Question 1
+  Time series data that exhibits cycles. This data set is the Personal savings as a % of disposable income over years of 1955-1979. 
+  Source - https://datamarket.com/data/set/22vy/personal-savings-as-of-disposable-income-1955-1979#!ds=22vy&display=line
+
+Description - As you can see in the plot below their is a cyclical dataset for personal savings as a % of disposal income. You can see a wave like pattern with peaks and troughs spread out of over 2+ years. You can see e.g. Peaks in 1958, 1962, 1968, 1973, 1977. These peaks have inconsistent time lengths between them and the peaks can be half the height e.g. 1958 and 1962. These make the cycles in the plot neither fixed nor predictable, unlike seasonality features which have consistent time lenghts between peaks.
+
+```{r}
+stocks_cycle_dataset = read_csv("~/Dropbox/Uni/stats326/assignment/assignment1/personal-savings cycle.csv")
+```
+#```{r fig.height=8 fig.height=10}
+```{r}
+series.ts = ts(stocks_cycle_dataset$`Personal savings as % of disposable income 1955-1979`, frequency = 4, start=1955)
+plot.ts(series.ts,main="Personal savings as % of disposable income \n(1955-1979)", xlab="Year",ylab="Savings (%)")
+
+```
+
+
+Question 2
+  A stationary time series data set of Precipitation in mm for East Port, USA, 1887-1995. 
+  Source - https://datamarket.com/data/set/22y6/precipitation-in-mm-eastport-usa-1887-1950#!ds=22y6&display=line
+  
+Description - As you can see in the plot below the precipitation data is a stationary time series, we can clearly see that it has a constant mean and constant variance over time and it has no additional components such as a tren and/or cyclical behaviour and/or seasonality
+
+```{r}
+precipitation.df = read_csv("~/Dropbox/Uni/stats326/assignment/assignment1/precipitation-in-mm-eastport-usa Stationary.csv")
+precipitation.df[3] = NULL
+precipitation.df[3] = NULL
+
+```
+
+```{r}
+precipitation.ts = ts(precipitation.df$`Precipitation in mm., Eastport, USA, 1887-1950`, frequency = 12, start=1887)
+plot.ts(precipitation.ts,main="Precipitation in mm Eastport USA (1887-1950)", xlab="Year",ylab="Precipitation")
+```
+
+Question 3
+  This time series has a seasonal component but no trend or cycle. The data set is Mean monthly air temperature for Nottingham Castle 1920-1939. Obviously we will see seasonal changes in temperature based on the 4 seasons
+  Source - https://datamarket.com/data/set/22li/mean-monthly-air-temperature-deg-f-nottingham-castle-1920-1939#!ds=22li&display=line
+  
+Description - As you can see in the plot below the monthly temperature for Nottigham Castle 1920-1939 is a Non-stationary time series with high seasonality as you can see the consistent highs and low temperatures consistently spread apart representing the summer and winter seasons and how it effects temperature. Therefore it is a regular repeating pattern through the series.
+
+```{r}
+seasonality.df = read_csv("~/Dropbox/Uni/stats326/assignment/assignment1/mean-monthly-air-temperature-deg Seasonality.csv")
+```
+```{r}
+seasonality.ts = ts(seasonality.df$`Mean monthly air temperature (Deg. F) Nottingham Castle 1920-1939`, frequency = 12, start=1920)
+plot.ts(seasonality.ts,main="Mean monthly temperature (Deg.F) \nNottigham Castle 1920-1939\n", xlab="Year",ylab="Air temp (Deg.F")
+```
+
+Question 4
+  This time series has a reasonable linear trend and a seasonal component. The data set is the monthly electricity production for Australia from 1956 - 1995
+  Source - https://datamarket.com/data/set/22l0/monthly-electricity-production-in-australia-million-kilowatt-hours-jan-1956-aug-1995#!ds=22l0&display=line
+  
+Description - As you can see in the plot below the Electricity production is a Non-stationary time series with high seasonality and a positive linear trend as you can see the consistent highs and lows electricity production representing the electricity demand differences during each year for I assume the different seasons which, therefore it is a regular repeating pattern through the series. We can also see a strong positive linear trend throughout the entire series representing the increased consumption of electricity for all our electronic devises over time.
+
+```{r}
+electricity.df = read_csv("~/Dropbox/Uni/stats326/assignment/assignment1/Seasonal linear trend monthly-electricity-production-i.csv")
+```
+```{r}
+electricity.ts = ts(electricity.df$`Monthly electricity production in Australia: million kilowatt hours. Jan 1956 ? Aug 1995`, frequency = 12, start=1956)
+plot.ts(electricity.ts,main="Mean Electricity production in Australia \n(Jan 1956 - Aug 1995)", xlab="Year",ylab="Million Kilowatt per hour")
+```
+

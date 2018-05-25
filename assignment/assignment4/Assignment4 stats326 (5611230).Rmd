@@ -1,0 +1,59 @@
+---
+title: "Stats326 - Assignment3"
+author: "Cameron Todd (5611230)"
+date: "29 Jan 2018"
+output:
+  word_document: default
+  html_document: default
+---
+
+```{r}
+library(readr)
+library(timeSeries)
+```
+```{r}
+dioxide_data = read.table("quarterly dioxide.2000.1.2017.3.txt", header = T)
+```
+
+Question 1
+```{r}
+Time = 1:67
+Quarter = factor(c(rep(1:4,16),(1:3)))
+dioxide.ts = ts(dioxide_data$dioxide[1:67],start=2000,frequency=4)
+
+dioxide.fit = arima(dioxide.ts, order = c(0,1,1), seasonal = list(order = c(0,1,1), period = 4))
+dioxide.fit
+
+plot.ts(residuals(dioxide.fit), main= "Residual series with MA(1) and SMA(1)")
+acf(residuals(dioxide.fit),lag.max = 67)
+
+dioxide.predictions = predict(dioxide.fit, n.ahead = 4)
+dioxide.predictions
+
+actual.values = dioxide_data$dioxide[68:71]
+actual.values
+
+RMSEP.dioxide.fit = sqrt(1/4*sum((actual.values - dioxide.predictions$pred)^2))
+RMSEP.dioxide.fit
+
+```
+Comment on dioxide.fit - residuals and acf: TBC
+
+
+A2 Q2 RMSEP = 0.6533238 > 0.07789541, therefore better model
+
+Q2
+```{r}
+Time.full = 1:71
+Quarter.full = factor(c(rep(1:4,17),(1:3)))
+dioxide_full.ts = ts(dioxide_data$dioxide, start = 2000, frequency = 4)
+
+dioxide_full.fit = arima(dioxide_full.ts, order = c(0,1,1), seasonal = list(order = c(0,1,1), period = 4))
+dioxide_full.fit
+
+dioxide_full.ts
+dioxide_full.predictions = predict(dioxide_full.fit, n.ahead = 4)
+dioxide_full.predictions
+residuals(dioxide_full.fit)
+
+```

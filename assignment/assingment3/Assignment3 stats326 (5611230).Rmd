@@ -1,0 +1,185 @@
+---
+title: "Stats326 - Assignment3"
+author: "Cameron Todd (5611230)"
+date: "29 Jan 2018"
+output:
+  word_document: default
+  html_document: default
+---
+
+```{r}
+library(readr)
+library(timeSeries)
+```
+```{r}
+some_data = read.table("A3Data.txt", header = T)
+```
+
+Question 1
+```{r}
+TS1.ts = ts(some_data$TS1, frequency = 1, start=1)
+plot.ts(TS1.ts,main="TS1 stationary time series data plot", xlab="Time",ylab="value")
+acf(TS1.ts)
+pacf(TS1.ts)
+
+TS1.fit = arima(TS1.ts, order=c(1,0,0))
+TS1.fit
+plot.ts(residuals(TS1.fit), main= "Residual Series for a AR fit")
+acf(residuals(TS1.fit))
+TS1.fit_good = arima(TS1.ts, order=c(1,0,1))
+TS1.fit_good
+plot.ts(residuals(TS1.fit_good), main= "Residual Series for a ARMA fit")
+acf(residuals(TS1.fit_good))
+
+```
+(Q1d) 
+Initial comments - After plotting the time series we could easily see it is a stationary univariate time series with perhaps a slight pattern of sorts but also had lots of white noise. However once we reviewed the acf and pacf plots we could comfortably see an exponential decay in the acf and the pacf showing a cut off at lag(1), we knew we would need to fit a sort of AR(1) model.
+Initial Equation - 
+$AR(1) = p_1y_t_-_1 + ∊_t where ∊_t: WN $
+
+(Q1e) 
+Estimated equation - 
+$AR(1) = $
+
+(Q1f) 
+Comment on Residuals - After fitting the AR(1) model, you can clearly see the residuals mainly showing white noise with no other pattern clearly being seen and the variance is normally distributed around 0 or 0 mean.
+
+(Q1g) 
+Comment on ACF - The new ACF with the fitted model shows no decay anymore but slight negative autocorrelation at lag 1, this may be fxed by adding a MA to the model.
+
+(Q1h) 
+New Model -
+After I saw a slight negative autocorrelation on the acf residuals of the first model, I decided to add in a moving average feature to a new model, which gave me a significantly lower AIC from 2833.22 - 2794.1. This is a far better model.
+
+
+
+Question 2
+```{r}
+TS2.ts = ts(some_data$TS2, frequency = 1, start=1)
+plot.ts(TS2.ts,main="TS2 stationary time series data plot", xlab="Time",ylab="value")
+acf(TS2.ts)
+pacf(TS2.ts)
+
+TS2.fit1 = arima(TS2.ts, order=c(0,0,2))
+TS2.fit1
+plot.ts(residuals(TS2.fit1), main= "Residual Series for a MA fit2")
+acf(residuals(TS2.fit1))
+
+```
+(Q2d)
+The initial plots for TS2 showed plenty of white noise, with the pacf plot showing plenty of decay or persistance and the acf plot cutting off at lag(2), therefore my first model was going to be a moving average cut off at lag(2) so MA(2).
+Initial Equation - 
+$MA(2): y_t = ∊_t + y_t_-_1 + ∊_t where ∊_t: WN$  
+
+(Q2e)
+Fitted Equation - 
+$MA(2) = p_1y_t_-_1 + ∊_t where ∊_t: WN$
+
+(Q2f)
+The residuals plot from my model show a constant variance with a mean of 0, only appearing to show white noise it seems.
+(Q2g)
+The acf plot looks much better with no more lags showing the model is a good fit.
+
+(Q2h)
+I tried a ARMA(1,2) model thinking their may have been decay in the acf and pacf that I may have missed and or the AIC of this model is a little bit better then my original model of 2945.8 vs 2945.4 of the ARMA model.
+```{r}
+TS2.fit2 = arima(TS2.ts, order=c(1,0,2))
+TS2.fit2
+plot.ts(residuals(TS2.fit2), main= "Residual Series for a MA fit2")
+acf(residuals(TS2.fit2))
+```
+
+
+Question 3
+```{r}
+TS3.ts = ts(some_data$TS3, frequency = 1, start=1)
+plot.ts(TS3.ts,main="TS3 stationary time series data plot", xlab="Time",ylab="value")
+acf(TS3.ts)
+pacf(TS3.ts)
+
+TS3.fitARMA = arima(TS3.ts, order=c(1,0,1))
+TS3.fitARMA
+plot.ts(residuals(TS3.fitARMA), main= "Residual Series for a ARMA fit on TS3 data")
+acf(residuals(TS3.fitARMA))
+```
+(Q3d)
+The initial plots for TS3 showed plenty of white noise, with the pacf plot showing plenty of decay or persistance and the acf plot also showing decay, therefore my initial model was going to be fitting a ARMA model with p and q being of value 1.
+Initial Equation - 
+$MA(2): y_t = ∊_t + y_t_-_1 + ∊_t where ∊_t: WN$  
+
+(Q3e)
+Fitted Equation - 
+$MA(2) = p_1y_t_-_1 + ∊_t where ∊_t: WN$
+
+(Q3f)
+The residuals plot from my model show a constant variance with a mean of 0, only appearing to show white noise it seems.
+(Q3g)
+The acf plot looks much better with no more lags showing the model is a good fit.
+
+(Q3h)
+I tried add an extra AR and AM term to the above model seperately but finding that the AIC for both models were higher then my original above, I rejected both of them.
+
+Question 4
+```{r}
+TS4.ts = ts(some_data$TS4, frequency = 1, start=1)
+plot.ts(TS4.ts,main="TS4 stationary time series data plot", xlab="Time",ylab="value")
+acf(TS4.ts)
+pacf(TS4.ts)
+
+TS4.fitARMA = arima(TS4.ts, order=c(3,0,1))
+TS4.fitARMA
+plot.ts(residuals(TS4.fitARMA), main= "Residual Series for a ARMA fit on TS3 data")
+acf(residuals(TS4.fitARMA))
+```
+(Q4d)
+The initial plots for TS4 showed plenty of white noise, with the acf plot showing strong decay and the pacf plot showing perhaps some decay or persistance and a cutoff at lag(3), therefore my initial model was going to be fitting an ARMA model with p and q being of value 3 and 1.
+Initial Equation - 
+$MA(2): y_t = ∊_t + y_t_-_1 + ∊_t where ∊_t: WN$  
+
+(Q4e)
+Fitted Equation - 
+$MA(2) = p_1y_t_-_1 + ∊_t where ∊_t: WN$
+
+(Q4f)
+The residuals plot from my model show a constant variance with a mean of 0, only appearing to show white noise it seems.
+(Q4g)
+The acf plot looks much better but still has a few lag issues at 3 and 5.
+
+(Q4h)
+I tried adding another AR and MA term so my model was ARMA(4,2) the AIC of this model is better then my original model of 2835.14 - 2813.61 as below, also the residuals look much better when looking at the acf and all the lags are not significant any more.
+```{r}
+TS4.fitARMA2 = arima(TS4.ts, order=c(4,0,2))
+TS4.fitARMA2
+plot.ts(residuals(TS4.fitARMA2), main= "Residual Series for a MA fit2")
+acf(residuals(TS4.fitARMA2))
+```
+
+
+Question 5
+```{r}
+TS5.ts = ts(some_data$TS5, frequency = 1, start=1)
+plot.ts(TS5.ts,main="TS5 stationary time series data plot", xlab="Time",ylab="value")
+acf(TS5.ts)
+pacf(TS5.ts)
+
+TS5.fit = arima(TS5.ts, order=c(1,0,0))
+TS5.fit
+plot.ts(residuals(TS5.fit), main= "Residual Series for a ARMA fit on TS3 data")
+acf(residuals(TS5.fit))
+```
+(Q5d)
+The initial plots for TS5 showed plenty of white noise, with the acf plot showing strong decay and the pacf plot showing pno persistence and a cutoff at lag(1), therefore my initial model was going to be fitting an AR(1) model.
+Initial Equation - 
+$MA(2): y_t = ∊_t + y_t_-_1 + ∊_t where ∊_t: WN$  
+
+(Q5e)
+Fitted Equation - 
+$MA(2) = p_1y_t_-_1 + ∊_t where ∊_t: WN$
+
+(Q5f)
+The residuals plot from my model show a constant variance with a mean of 0, only appearing to show white noise it seems.
+(Q5g)
+The acf plot of the residuals looks fine.
+
+(Q5h)
+I did not really know how to improve this model, I tried adding a moving average term to see if it would reduce the AIC but it was higher. I think my original is the best final model.

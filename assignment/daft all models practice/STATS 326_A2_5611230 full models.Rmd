@@ -1,0 +1,344 @@
+---
+title: "STATS 326 Assignment 2"
+Student ID: 5553528
+output:
+  word_document: default
+  html_document: default
+Name: Danielle Parkinson
+---
+
+```{r}
+library(readr)
+library(timeSeries)
+library(s20x)
+```
+
+Question 1: 
+
+
+```{r}
+q_dioxide.df = read.table("quarterly dioxide.txt", header = T)
+QuarterlyDioxide.ts = ts(q_dioxide.df$dioxide, frequency = 4, start = 2000)
+plot.ts(QuarterlyDioxide.ts, main = "Quarterly Measurements of Atmospheric Carbon Dioxide (2000 - 2017)", xlab = "Months", ylab = "Carbon Dioxide in parts per million (ppm)")
+
+```
+Comments on the plot:
+comment - increasing trend and strong seasonaility
+do not transform 
+
+
+Question 2:
+
+# 1 - Workings seasonal factor model
+```{r}
+Time = 1:67
+Quarter = factor(c(rep(1:4,16),(1:3)))
+carbon.ts = ts(q_dioxide.df$dioxide[1:67],start=2000, frequency=4)
+carbon.fit = lm(carbon.ts~Time+Quarter)
+plot.ts(residuals(carbon.fit),main="Residuals of carbon fit")
+
+carbon.fit2 = lm(carbon.ts~Time + I(Time^2)+Quarter)
+#plot.ts(residuals(carbon.fit2),main="Residuals of carbon fit2")
+
+#summary(carbon.fit2)
+#acf(residuals(carbon.fit2))
+carbon.fit2lag = lm(carbon.ts[-1]~Time[-1]+I(Time[-1]^2)+Quarter[-1]+carbon.ts[-67])
+plot.ts(residuals(carbon.fit2lag), main="Carbon fit quadratic with lag residuals")
+acf(residuals(carbon.fit2lag))
+normcheck(residuals(carbon.fit2lag),shapiro.wilk = T)
+summary(carbon.fit2lag)
+
+#Forecasting for Q4 2016
+t68.pred = carbon.fit2lag$coefficients[1] + carbon.fit2lag$coefficients[2] *68 + carbon.fit2lag$coefficients[3] * (68^2) - carbon.fit2lag$coefficients[6] *1 + carbon.fit2lag$coefficients[7] * carbon.ts[67]
+t68.pred
+
+t69.pred = carbon.fit2lag$coefficients[1] + carbon.fit2lag$coefficients[2] *69 + carbon.fit2lag$coefficients[3] * (69^2) + carbon.fit2lag$coefficients[7] * t68.pred
+t69.pred
+
+t70.pred = carbon.fit2lag$coefficients[1] + carbon.fit2lag$coefficients[2] *70 + carbon.fit2lag$coefficients[3] * (70^2) - carbon.fit2lag$coefficients[4] *1 + carbon.fit2lag$coefficients[7] *t69.pred
+t70.pred
+
+t71.pred = carbon.fit2lag$coefficients[1] + carbon.fit2lag$coefficients[2] *71 + carbon.fit2lag$coefficients[3] * (71^2) - carbon.fit2lag$coefficients[5] *1 + carbon.fit2lag$coefficients[7] * t70.pred
+t71.pred
+
+print("The RMSEP")
+RMSEP.seasonal_factor = sqrt((1/4)*sum((q_dioxide.df$dioxide[68]-t68.pred)^2,(q_dioxide.df$dioxide[69]-t69.pred)^2,(q_dioxide.df$dioxide[70]-t70.pred)^2,(q_dioxide.df$dioxide[71]-t71.pred)^2))
+RMSEP.seasonal_factor
+
+``` 
+# 2 - Workings for Cosines harmonic model
+```{r}
+plot.ts(carbon.ts[1:8],main="First Seasons of carbon dioxide from  Jan 2000 - Dec 2001",xlab = "quarters", ylab="carbon dioxide (ppm)")
+abline(v=2,lty=2)
+
+Seasonal = cos((2*pi*(Time - 2))/4)
+carbon.fit_cs_harmonic = lm(carbon.ts~Time+Seasonal)
+#plot.ts(residuals(carbon.fit_cs_harmonic),main="Residual series of cosine harmonic")
+#summary(carbon.fit_cs_harmonic)
+
+carbon.fit_cs_harmonic2 = lm(carbon.ts~Time + I(Time^2) + Seasonal)
+#plot.ts(residuals(carbon.fit_cs_harmonic2),main="Residual series of cosine harmonic with quadratic")
+
+#summary(carbon.fit_cs_harmonic2)
+#acf(residuals(carbon.fit_cs_harmonic2))
+
+carbon.fit_cs_harmonic3 = lm(carbon.ts[-1]~Time[-1] + I(Time[-1]^2) + Seasonal[-1] + carbon.ts[-67])
+acf(residuals(carbon.fit_cs_harmonic3))
+summary(carbon.fit_cs_harmonic3)
+
+normcheck(residuals(carbon.fit_cs_harmonic3),shapiro.wilk = T)
+#y = carbon.fit_cs_harmonic3$coefficients[1] + carbon.fit_cs_harmonic3$coefficients[2] * 
+#y = 811.3 + 1.024 * Time[-1] + 0.00190 * (Time[-1]^2) + 4.513 * cos(2*pi*(Time[-1]-2)/4) - 1.203
+#y = 811.3 + 1.024 * Time + 0.00190 * (Time^2) + 4.513 * cos(2*pi*(Time-2)/4) - 1.203
+#plot(Time[-1], y, type="l",main="Fitted Model")
+#points(Time,carbon.ts, type = "p", col = "red")
+
+#Forecast for Cosine
+t68h.pred = carbon.fit_cs_harmonic3$coefficients[1] + carbon.fit_cs_harmonic3$coefficients[2] *68 + carbon.fit_cs_harmonic3$coefficients[3] * (68^2) - carbon.fit_cs_harmonic3$coefficients[4]*cos((2*pi*(68-2))/4) + carbon.fit_cs_harmonic3$coefficients[5] * carbon.ts[67]
+t68h.pred
+
+t69h.pred = carbon.fit_cs_harmonic3$coefficients[1] + carbon.fit_cs_harmonic3$coefficients[2] *69 + carbon.fit_cs_harmonic3$coefficients[3] * (69^2) - carbon.fit_cs_harmonic3$coefficients[4]*cos((2*pi*(69-2))/4) + carbon.fit_cs_harmonic3$coefficients[5] * t68h.pred
+t69h.pred
+
+t70h.pred = carbon.fit_cs_harmonic3$coefficients[1] + carbon.fit_cs_harmonic3$coefficients[2] *70 + carbon.fit_cs_harmonic3$coefficients[3] * (70^2) - carbon.fit_cs_harmonic3$coefficients[4]*cos((2*pi*(70-2))/4) + carbon.fit_cs_harmonic3$coefficients[5] * t69h.pred
+t70h.pred
+
+t71h.pred = carbon.fit_cs_harmonic3$coefficients[1] + carbon.fit_cs_harmonic3$coefficients[2] *71 + carbon.fit_cs_harmonic3$coefficients[3] * (71^2) - carbon.fit_cs_harmonic3$coefficients[4]*cos((2*pi*(71-2))/4) + carbon.fit_cs_harmonic3$coefficients[5] * t70h.pred
+t71h.pred
+
+print("The RMSEP")
+RMSEP.cs_harmonic = sqrt((1/4)*sum((q_dioxide.df$dioxide[68]-t68h.pred)^2,(q_dioxide.df$dioxide[69]-t69h.pred)^2,(q_dioxide.df$dioxide[70]-t70h.pred)^2,(q_dioxide.df$dioxide[71]-t71h.pred)^2))
+RMSEP.cs_harmonic
+
+```
+
+# 3- Full Harmonic Model
+```{r}
+c1 = cos(2*pi*Time*(1/4))
+s1 = sin(2*pi*Time*(1/4))
+c2 = cos(2*pi*Time*(2/4))
+
+carbon.fit_fullH = lm(carbon.ts~Time+c1+s1+c2)
+plot.ts(residuals(carbon.fit_fullH), main = "Residual Series of Full Harmonic")
+
+carbon.fit_fullH2 = lm(carbon.ts~Time+I(Time^2)+c1+s1+c2)
+plot.ts(residuals(carbon.fit_fullH2), main = "Residual Series of Full Harmonic with quadratic")
+
+summary(carbon.fit_fullH2)
+acf(residuals(carbon.fit_fullH))
+
+carbon.fit_fullH3 = lm(carbon.ts[-1]~Time[-1]+I(Time[-1]^2)+c1[-1]+s1[-1]+c2[-1]+carbon.ts[-67])
+summary(carbon.fit_fullH3)
+
+#remove any non-significant variables (doesn't have to be a pair)
+carbon.fit_fullH4 = lm(carbon.ts[-1]~Time[-1]+I(Time[-1]^2)+s1[-1]+c2[-1]+carbon.ts[-67])
+summary(carbon.fit_fullH4)
+acf(residuals(carbon.fit_fullH4))
+plot.ts(residuals(carbon.fit_fullH4), main = "Residual Series")
+normcheck(residuals(carbon.fit_fullH4), shapiro.wilk = T)
+```
+```{r}
+
+t68.predFH = carbon.fit_fullH4$coefficients[1] + carbon.fit_fullH4$coefficients[2] *68 
++ carbon.fit_fullH4$coefficients[3] *(68^2) + carbon.fit_fullH4$coefficients[4]*sin(2*pi*68*(1/4)) + 
+  carbon.fit_fullH4$coefficients[5]*cos(2*pi*68*(2/4)) + carbon.fit_fullH4$coefficients[6] * carbon.ts[67]
+t68.predFH
+
+t68.predFH2 = carbon.fit_fullH3$coefficients[1] + carbon.fit_fullH3$coefficients[2] *68 
++ carbon.fit_fullH3$coefficients[3] * (68^2) + carbon.fit_fullH3$coefficients[4]*cos(2*pi*68*(1/4)) + carbon.fit_fullH3$coefficients[5]*sin(2*pi*68*(1/4)) + 
+  carbon.fit_fullH3$coefficients[6]*cos(2*pi*68*(2/4)) + carbon.fit_fullH3$coefficients[7]*carbon.ts[67]
+#t68.predFH2 
+
+#TO BE CONTINUED...
+```
+
+
+# 4 - Seasonally Adjusted Moving Averages Model 
+```{r}
+#decomp.series = decompose(carbon.ts)
+#plot.ts(decomp.series, main = "ma_de-seasonalised_data")
+
+decomp.ma.carbon = decompose(carbon.ts)
+decomp.ma.carbon$dioxide
+decomp.ma.carbon$figure
+plot(decomp.ma.carbon)
+
+decomp.ma.carbon$seasonal
+
+ma.sa.carbon.ts = carbon.ts - decomp.ma.carbon$seasonal
+
+plot(ma.sa.carbon.ts, main = "Moving average seasonally adjusted Carbon Dioxide" , xlab="Quarter", ylab="Carbon dioxide (ppm)")
+
+carbon.fit_SA_MA = lm(ma.sa.carbon.ts~Time+ I(Time^2))
+summary(carbon.fit_SA_MA)
+
+plot.ts(residuals(carbon.fit_SA_MA), main = "Residual Series")
+acf(residuals(carbon.fit_SA_MA))
+
+carbon.fit_SA_MA2 = lm(ma.sa.carbon.ts[-1]~Time[-1]+ I(Time[-1]^2) + ma.sa.carbon.ts[-67])
+summary(carbon.fit_SA_MA2)
+acf(residuals(carbon.fit_SA_MA2))
+normcheck(residuals(carbon.fit_SA_MA2), shapiro.wilk = T)
+
+
+#SA MA Forecast
+
+t68.ma.pred = carbon.fit_SA_MA2$coefficients[1] + carbon.fit_SA_MA2$coefficients[2]*68 + carbon.fit_SA_MA2$coefficients[3] *(68^2) + carbon.fit_SA_MA2$coefficients[4] * ma.sa.carbon.ts[67]
+t68.ma.pred
+
+t69.ma.pred = carbon.fit_SA_MA2$coefficients[1] + carbon.fit_SA_MA2$coefficients[2]*69 + carbon.fit_SA_MA2$coefficients[3] *(69^2) + carbon.fit_SA_MA2$coefficients[4] * t68.ma.pred
+t69.ma.pred
+
+t70.ma.pred = carbon.fit_SA_MA2$coefficients[1] + carbon.fit_SA_MA2$coefficients[2]*70 + carbon.fit_SA_MA2$coefficients[3] *(70^2) + carbon.fit_SA_MA2$coefficients[4] * t69.ma.pred
+t70.ma.pred
+
+t71.ma.pred = carbon.fit_SA_MA2$coefficients[1] + carbon.fit_SA_MA2$coefficients[2]*71 + carbon.fit_SA_MA2$coefficients[3] *(71^2) + carbon.fit_SA_MA2$coefficients[4] * t70.ma.pred
+t71.ma.pred
+
+print("The RMSEP")
+RMSEP.ma.sa = sqrt((1/4)*sum((q_dioxide.df$dioxide[68]-t68.ma.pred)^2,(q_dioxide.df$dioxide[69]-t69.ma.pred)^2,(q_dioxide.df$dioxide[70]-t70.ma.pred)^2,(q_dioxide.df$dioxide[71]-t71.ma.pred)^2))
+RMSEP.ma.sa
+
+```
+
+
+# 5 - Seasonally Adjusted STL Model
+```{r}
+decomp.stl.carbon = stl(carbon.ts, s.window = "periodic")
+decomp.stl.carbon$time.series[1:4,1]
+#plot(decomp.stl.carbon)
+
+stl.sa.carbon.ts = carbon.ts-decomp.stl.carbon$time.series[,1]
+plot(stl.sa.carbon.ts, main = "Seasonal Trend Lowess SA Carbon Dioxide", xlab="Quarter", ylab="Carbon Dioxide (ppm)")
+
+carbon.fit_SA_STL = lm(stl.sa.carbon.ts[-1]~Time[-1]+I(Time[-1]^2) + stl.sa.carbon.ts[-67])
+summary(carbon.fit_SA_STL)
+
+plot.ts(residuals(carbon.fit_SA_STL), main = "Residual Series")
+acf(residuals(carbon.fit_SA_STL))
+normcheck(residuals(carbon.fit_SA_STL))
+
+
+#STL Forecast 
+t68.stl.pred = carbon.fit_SA_STL$coefficients[1] + carbon.fit_SA_STL$coefficients[2]*68 + carbon.fit_SA_STL$coefficients[3] *(68^2) + carbon.fit_SA_STL$coefficients[4] * stl.sa.carbon.ts[67]
+t68.ma.pred
+
+t69.stl.pred = carbon.fit_SA_STL$coefficients[1] + carbon.fit_SA_STL$coefficients[2]*69 + carbon.fit_SA_STL$coefficients[3] *(69^2) + carbon.fit_SA_STL$coefficients[4] * t68.stl.pred
+t69.ma.pred
+
+t70.stl.pred = carbon.fit_SA_STL$coefficients[1] + carbon.fit_SA_STL$coefficients[2]*70 + carbon.fit_SA_STL$coefficients[3] *(70^2) + carbon.fit_SA_STL$coefficients[4] * t69.stl.pred
+t70.ma.pred
+
+t71.stl.pred = carbon.fit_SA_STL$coefficients[1] + carbon.fit_SA_STL$coefficients[2]*71 + carbon.fit_SA_STL$coefficients[3] *(71^2) + carbon.fit_SA_STL$coefficients[4] * t70.stl.pred
+t71.ma.pred
+
+print("The RMSEP")
+RMSEP.stl.sa = sqrt((1/4)*sum((q_dioxide.df$dioxide[68]-t68.stl.pred)^2,(q_dioxide.df$dioxide[69]-t69.stl.pred)^2,(q_dioxide.df$dioxide[70]-t70.stl.pred)^2,(q_dioxide.df$dioxide[71]-t71.stl.pred)^2))
+RMSEP.stl.sa
+
+```
+
+
+
+#Question 3 - 
+
+Re-running Seasonally adjusted Moving averages model - with all data
+```{r}
+QuarterlyDioxide.ts = ts(qdioxide$dioxide, frequency = 4, start = 2000)
+Time.sa = 1:71
+Quarter.sa = factor(c(rep(1:4,17),(1:3)))
+carbon.sa.ts = ts(q_dioxide.df$dioxide[1:71],start=2000, frequency=4)
+
+
+decomp.ma.carbon3 = decompose(carbon.sa.ts)
+decomp.ma.carbon3$dioxide
+decomp.ma.carbon3$figure
+plot(decomp.ma.carbon3)
+
+decomp.ma.carbon3$seasonal
+
+ma.sa.carbon3.ts = carbon.sa.ts - decomp.ma.carbon3$seasonal
+
+plot(ma.sa.carbon3.ts, main = "Seasonally Adjusted Moving Averages Carbon Dioxide from Quarter 1 (2000) - Quarter 3 (2017) " , xlab="Quarter", ylab="Carbon Dioxide (ppm)")
+
+carbon.fit3 = lm(ma.sa.carbon3.ts~Time.sa+ I(Time.sa^2))
+summary(carbon.fit3)
+
+plot.ts(residuals(carbon.fit3), main = "Residual Series")
+acf(residuals(carbon.fit3))
+
+carbon.fit4 = lm(ma.sa.carbon3.ts[-1]~Time.sa[-1]+ I(Time.sa[-1]^2) + ma.sa.carbon3.ts[-71])
+summary(carbon.fit4)
+acf(residuals(carbon.fit4))
+normcheck(residuals(carbon.fit4), shapiro.wilk = T)
+
+
+#SA MA Forecast
+
+t72.ma.pred = carbon.fit4$coefficients[1] + carbon.fit4$coefficients[2]*72 + carbon.fit4$coefficients[3] *(72^2) + carbon.fit4$coefficients[4] * ma.sa.carbon3.ts[71]
+t72.ma.pred
+
+t73.ma.pred = carbon.fit4$coefficients[1] + carbon.fit4$coefficients[2]*73 + carbon.fit4$coefficients[3] *(73^2) + carbon.fit4$coefficients[4] * t72.ma.pred
+t73.ma.pred
+
+t74.ma.pred = carbon.fit4$coefficients[1] + carbon.fit4$coefficients[2]*74 + carbon.fit4$coefficients[3] *(74^2) + carbon.fit4$coefficients[4] * t73.ma.pred
+t74.ma.pred
+
+t75.ma.pred = carbon.fit4$coefficients[1] + carbon.fit4$coefficients[2]*75 + carbon.fit4$coefficients[3] *(75^2) + carbon.fit4$coefficients[4] * t74.ma.pred
+t75.ma.pred
+
+#TO DO PREDICTION INTERVALS 
+
+pred72.high = t72.ma.pred + 1.96 * 0.3452
+pred72.low = t72.ma.pred - 1.96 * 0.3452
+
+cat("Lower t72: ",pred72.low, "\n")
+cat("Upper t72: ",pred72.high, "\n")
+
+
+pred73.high = t73.ma.pred + 1.96 * 0.3452
+pred73.low = t73.ma.pred - 1.96 * 0.3452
+
+cat("Lower t73: ",pred73.low, "\n")
+cat("Upper t73: ",pred73.high, "\n")
+
+
+pred74.high = t74.ma.pred + 1.96 * 0.3452
+pred74.low = t74.ma.pred - 1.96 * 0.3452
+
+cat("Lower t74: ",pred74.low, "\n")
+cat("Upper t74: ",pred74.high, "\n")
+
+
+pred75.high = t75.ma.pred + 1.96 * 0.3452
+pred75.low = t75.ma.pred - 1.96 * 0.3452
+
+cat("Lower t75: ",pred75.low, "\n")
+cat("Upper t75: ",pred75.high, "\n")
+```
+Technical notes for question 3:
+
+
+
+
+
+#Question 4 - Holt Winters Model of Q3
+```{r}
+#Additive Model HS
+
+carbon.fit.hw = HoltWinters(carbon.ts)
+plot(carbon.fit.hw)
+
+carbon.fit.hw.pred = predict(carbon.fit.hw, n.ahead = 4)
+#carbon.fit.hw.pred
+
+plot(carbon.fit.hw,carbon.fit.hw.pred)
+
+actual = q_dioxide.df$dioxide[68:71]
+actual
+
+RMSEP.hw.add.pred = sqrt(1/4 * sum((actual-carbon.fit.hw.pred)^2))
+RMSEP.hw.add.pred
+```
+Comments: justify answer for this being better = RMSEP is smaller
+
